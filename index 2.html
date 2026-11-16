@@ -1,0 +1,766 @@
+<!doctype html>
+<html lang="sw">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Jamii</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@600;800&family=DM+Sans:wght@400;500;700&display=swap">
+<style>
+/* Layout: one narrow column app. A kanga-bordered cover leads into four category tiles; each tile opens a feed with inline comments. */
+:root{
+  --bg:#f1f5f6; --surface:#ffffff; --surface-2:#e6edf0; --ink:#12202a; --muted:#576873; --line:#d6e0e4;
+  --brand:#0c6b75; --on-brand:#ffffff; --danger:#b42318;
+  --c-dating:#bf2459; --c-memes:#8a5a00; --c-biashara:#0c6b75; --c-vivutio:#3d6c2a; --on-cat:#ffffff;
+  --a1:#0c6b75; --a2:#bf2459; --a3:#8a5a00; --a4:#3d6c2a; --a5:#5a49b4;
+  --logo-bg:#0c6b75; --logo-fg:#ffffff; --logo-a:#f5b21b; --logo-b:#ff6f9c;
+  --splash-bg:#073c44; --splash-ink:#ffffff; --splash-gold:#f5b21b; --splash-pink:#ff6f9c;
+  --shadow:0 1px 2px rgba(18,32,42,.06),0 4px 14px rgba(18,32,42,.06);
+  --font-display:'Bricolage Grotesque',system-ui,sans-serif;
+  --font-body:'DM Sans',system-ui,sans-serif;
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --bg:#0d171c; --surface:#15232a; --surface-2:#1d2f38; --ink:#e8f0f3; --muted:#9bb0ba; --line:#28404a;
+    --brand:#3bb8c5; --on-brand:#06242a; --danger:#ff8a7a;
+    --c-dating:#ff7aa5; --c-memes:#f5b94a; --c-biashara:#4cc3cf; --c-vivutio:#98ca78; --on-cat:#0d171c;
+    --shadow:none; color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0d171c; --surface:#15232a; --surface-2:#1d2f38; --ink:#e8f0f3; --muted:#9bb0ba; --line:#28404a;
+  --brand:#3bb8c5; --on-brand:#06242a; --danger:#ff8a7a;
+  --c-dating:#ff7aa5; --c-memes:#f5b94a; --c-biashara:#4cc3cf; --c-vivutio:#98ca78; --on-cat:#0d171c;
+  --shadow:none; color-scheme:dark;
+}
+*{box-sizing:border-box}
+html,body{height:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font:400 15px/1.5 var(--font-body);-webkit-font-smoothing:antialiased}
+body.on-splash{background:var(--splash-bg)}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:30;background:var(--bg)}
+body.on-splash::before{background:var(--splash-bg)}
+button,input,textarea,select{font:inherit;color:inherit}
+h1,h2,h3{font-family:var(--font-display);margin:0;text-wrap:balance;line-height:1.15}
+p{margin:0}
+#app{min-height:100%}
+.wrap{max-width:560px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+:focus-visible{outline:3px solid color-mix(in srgb,var(--brand) 65%,transparent);outline-offset:2px}
+.muted{color:var(--muted)}
+.sel{user-select:all}
+
+/* splash */
+#app.is-splash{display:flex;flex-direction:column}
+.splash{flex:1;display:flex;flex-direction:column;background:var(--splash-bg);color:var(--splash-ink)}
+.band svg{display:block}
+.kg-bg{fill:var(--splash-bg)} .kg-d{fill:none;stroke:var(--splash-gold);stroke-width:3} .kg-p{fill:var(--splash-pink)} .kg-w{fill:var(--splash-ink)}
+.splash-mid{flex:1;display:grid;place-content:center;justify-items:center;gap:12px;padding:36px 16px;text-align:center}
+.splash-mid>*{animation:rise .6s ease both}
+.splash-name{font-size:68px;font-weight:800;letter-spacing:-.02em;color:var(--splash-ink)}
+.tagline{margin-top:10px;padding:10px 20px;border:2px solid var(--splash-gold);border-radius:999px;font:600 17px var(--font-display);color:var(--splash-ink)}
+.splash-cta{display:grid;justify-items:center;padding:8px 16px 28px}
+@keyframes rise{from{transform:translateY(10px)}to{transform:none}}
+@media (prefers-reduced-motion:reduce){.splash-mid>*{animation:none}}
+
+/* buttons, fields */
+.btn{appearance:none;border:0;border-radius:12px;padding:12px 18px;min-height:46px;background:var(--brand);color:var(--on-brand);font-weight:700;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:8px;text-decoration:none}
+.btn.ghost{background:transparent;color:var(--ink);border:1.5px solid var(--line)}
+.btn.gold{background:var(--splash-gold);color:#073c44;min-width:180px}
+.btn.cat{background:var(--cat);color:var(--on-cat)}
+.btn.block{width:100%}
+.btn.small{min-height:38px;padding:8px 14px;font-size:14px}
+.btn:disabled{opacity:.6;cursor:default}
+.link{border:0;background:none;padding:0;color:var(--brand);font-weight:700;cursor:pointer;text-align:left}
+.field{display:grid;gap:6px}
+.field label,.lbl{font-weight:700;font-size:13.5px}
+.field .hint{font-size:12.5px;color:var(--muted)}
+input[type=text],input[type=email],input[type=tel],input[type=number],textarea{width:100%;padding:12px 14px;border:1.5px solid var(--line);border-radius:12px;background:var(--surface);color:var(--ink);font-size:16px}
+textarea{min-height:92px;resize:vertical}
+.err{color:var(--danger);font-size:13.5px;font-weight:600}
+.check{display:flex;gap:10px;align-items:flex-start;font-size:14px}
+.check input{width:20px;height:20px;margin:2px 0 0;accent-color:var(--brand)}
+.or{display:flex;align-items:center;gap:12px;color:var(--muted);font-size:13px}
+.or::before,.or::after{content:"";flex:1;height:1px;background:var(--line)}
+
+/* shell */
+.top{position:sticky;top:env(safe-area-inset-top,0px);z-index:20;background:var(--bg);border-bottom:1px solid var(--line)}
+.top-in{display:flex;align-items:center;gap:10px;min-height:58px}
+.wordmark{font:800 22px var(--font-display);letter-spacing:-.01em}
+.top-title{font:700 18px var(--font-display);display:flex;align-items:center;gap:8px;min-width:0}
+.spacer{flex:1}
+.icon-btn{width:40px;height:40px;border-radius:12px;border:0;background:transparent;display:grid;place-items:center;cursor:pointer;color:var(--ink);padding:0}
+.icon-btn:hover{background:var(--surface-2)}
+.main{padding-top:18px;padding-bottom:116px;display:grid;gap:16px;align-content:start}
+.nav{position:fixed;left:0;right:0;bottom:0;z-index:20;background:var(--surface);border-top:1px solid var(--line);padding:6px max(8px,env(safe-area-inset-right,0px)) calc(6px + env(safe-area-inset-bottom,0px)) max(8px,env(safe-area-inset-left,0px))}
+.nav-in{max-width:560px;margin:0 auto;display:grid;grid-template-columns:repeat(3,1fr);gap:4px}
+.nav button{display:grid;justify-items:center;gap:2px;padding:6px;border:0;background:none;color:var(--muted);font-size:12px;font-weight:700;cursor:pointer;border-radius:12px}
+.nav button[aria-current="page"]{color:var(--brand)}
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(86px + env(safe-area-inset-bottom,0px));z-index:50;background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:12px;font-weight:600;font-size:14px;max-width:min(92%,420px)}
+.note{padding:10px 12px;border-radius:12px;background:color-mix(in srgb,var(--brand) 10%,var(--surface));border:1px solid color-mix(in srgb,var(--brand) 25%,var(--line));font-size:13.5px}
+.note.warn{background:color-mix(in srgb,var(--danger) 9%,var(--surface));border-color:color-mix(in srgb,var(--danger) 30%,var(--line))}
+
+/* avatars */
+.av{display:inline-grid;place-items:center;border-radius:50%;object-fit:cover;color:#fff;font-weight:700;flex:none;overflow:hidden}
+svg.logo{display:block;flex:none}
+.lg-bg{fill:var(--logo-bg)} .lg-a{fill:var(--logo-a)} .lg-b{fill:var(--logo-b)} .lg-fg{fill:none;stroke:var(--logo-fg)}
+
+/* auth */
+.auth{padding-top:28px;padding-bottom:40px;display:grid;gap:18px;align-content:start}
+.auth-head{display:flex;gap:12px;align-items:center}
+.seg{display:grid;grid-template-columns:1fr 1fr;background:var(--surface-2);border-radius:12px;padding:4px;gap:4px}
+.seg button{border:0;background:transparent;padding:10px;border-radius:9px;font-weight:700;color:var(--muted);cursor:pointer}
+.seg button[aria-pressed="true"]{background:var(--surface);color:var(--ink);box-shadow:var(--shadow)}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:16px;display:grid;gap:14px;box-shadow:var(--shadow)}
+.fine{font-size:12.5px;color:var(--muted)}
+.loading{min-height:60vh;display:grid;place-content:center;justify-items:center;gap:12px;color:var(--muted)}
+
+/* home */
+.hello{font-size:30px;font-weight:800;letter-spacing:-.01em}
+.tiles{display:grid;grid-template-columns:repeat(2,1fr);gap:12px}
+.tile{text-align:left;border:1px solid color-mix(in srgb,var(--cat) 30%,var(--line));background:color-mix(in srgb,var(--cat) 11%,var(--surface));border-radius:18px;padding:14px;display:grid;gap:8px;align-content:start;color:var(--ink);cursor:pointer;min-height:158px}
+.tile .tic{width:42px;height:42px;border-radius:12px;background:var(--cat);color:var(--on-cat);display:grid;place-items:center}
+.tile h2{font-size:19px;font-weight:800}
+.tile .blurb{font-size:13px;color:var(--muted);line-height:1.35}
+.tile .count{font-size:12.5px;font-weight:700;color:var(--cat)}
+.sec-h{font:700 15px var(--font-display);margin-top:4px}
+.mini{display:grid;gap:8px}
+.mini-row{display:grid;gap:3px;text-align:left;border:1px solid var(--line);background:var(--surface);border-radius:14px;padding:11px 13px;cursor:pointer}
+.mini-row .t{font-weight:700;overflow-wrap:anywhere}
+.mini-row .m{font-size:12.5px;color:var(--muted);display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+
+/* category feed */
+.cat-title{color:var(--cat)}
+.feed-head{display:grid;gap:12px}
+.chips{display:flex;gap:8px;flex-wrap:wrap}
+.chip{border:1.5px solid var(--line);background:var(--surface);border-radius:999px;padding:7px 13px;font-size:13.5px;font-weight:700;color:var(--ink);cursor:pointer}
+.chip[aria-pressed="true"]{background:var(--cat,var(--brand));border-color:var(--cat,var(--brand));color:var(--on-cat,var(--on-brand))}
+.tag{display:inline-block;padding:3px 10px;border-radius:999px;font-size:12.5px;font-weight:700;background:color-mix(in srgb,var(--cat,var(--brand)) 14%,var(--surface));color:var(--cat,var(--brand))}
+.post{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:14px;display:grid;gap:10px;box-shadow:var(--shadow)}
+.ph{display:flex;align-items:center;gap:10px;min-width:0}
+.author{display:flex;align-items:center;gap:10px;border:0;background:none;padding:0;text-align:left;cursor:pointer;min-width:0}
+.author b{font-weight:700;overflow-wrap:anywhere}
+.ph-meta{font-size:12.5px;color:var(--muted)}
+.post h3{font-size:19px;font-weight:700;overflow-wrap:anywhere}
+.ptext{white-space:pre-wrap;overflow-wrap:anywhere}
+.pimg{display:block;width:100%;height:auto;max-height:560px;object-fit:contain;background:var(--surface-2);border-radius:12px}
+.meta{display:flex;gap:6px;flex-wrap:wrap}
+.loc{display:flex;gap:6px;align-items:center;flex-wrap:wrap;font-size:13.5px;color:var(--muted)}
+.loc a,.contact a{color:var(--brand);font-weight:700}
+.contact{font-size:14px;display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.acts{display:flex;gap:6px;flex-wrap:wrap;align-items:center;border-top:1px solid var(--line);padding-top:8px}
+.act{border:0;background:none;display:inline-flex;gap:6px;align-items:center;padding:7px 10px;border-radius:10px;font-weight:700;font-size:13.5px;color:var(--muted);cursor:pointer}
+.act:hover{background:var(--surface-2)}
+.act[aria-pressed="true"]{color:var(--cat,var(--brand))}
+.act[aria-pressed="true"] svg{fill:currentColor}
+.act.danger{color:var(--danger)}
+.acts .grow{flex:1}
+.comments{display:grid;gap:10px;border-top:1px solid var(--line);padding-top:10px}
+.cm{display:flex;gap:9px;align-items:flex-start}
+.cm-b{flex:1;min-width:0;background:var(--surface-2);border-radius:12px;padding:7px 11px}
+.cm-h{font-size:12.5px;display:flex;gap:8px;flex-wrap:wrap}
+.cm-t{white-space:pre-wrap;overflow-wrap:anywhere;font-size:14.5px}
+.cm .x{border:0;background:none;color:var(--muted);cursor:pointer;font-size:12px;font-weight:700;padding:4px}
+.av-btn{border:0;background:none;padding:0;cursor:pointer;display:grid}
+.cform{display:flex;gap:8px;align-items:center}
+.cform input{flex:1;min-width:0;padding:10px 13px;border-radius:999px}
+.send{width:42px;height:42px;border-radius:50%;border:0;background:var(--brand);color:var(--on-brand);display:grid;place-items:center;cursor:pointer;flex:none}
+.empty{border:1.5px dashed var(--line);border-radius:16px;padding:26px 18px;text-align:center;color:var(--muted);display:grid;gap:10px;justify-items:center}
+
+/* profile */
+.me-head{display:flex;gap:14px;align-items:center}
+.me-head h1{font-size:26px;font-weight:800;overflow-wrap:anywhere}
+.photo-row{display:flex;gap:14px;align-items:center;flex-wrap:wrap}
+.switch{display:flex;gap:12px;align-items:flex-start;cursor:pointer}
+.switch input{position:absolute;opacity:0}
+.switch .trk{width:46px;height:28px;border-radius:999px;background:var(--surface-2);border:1.5px solid var(--line);position:relative;flex:none;transition:background .15s}
+.switch .trk::after{content:"";position:absolute;top:2px;left:2px;width:20px;height:20px;border-radius:50%;background:var(--muted);transition:transform .15s,background .15s}
+.switch input:checked+.trk{background:var(--brand);border-color:var(--brand)}
+.switch input:checked+.trk::after{transform:translateX(18px);background:var(--on-brand)}
+.switch input:focus-visible+.trk{outline:3px solid color-mix(in srgb,var(--brand) 65%,transparent);outline-offset:2px}
+.members{display:grid;gap:8px}
+.mem{display:flex;gap:12px;align-items:center;text-align:left;border:1px solid var(--line);background:var(--surface);border-radius:14px;padding:11px 13px;cursor:pointer;width:100%}
+.mem .nm{font-weight:700;overflow-wrap:anywhere}
+.mem .bio{font-size:13px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
+.big-prof{display:grid;gap:12px;justify-items:start}
+.big-prof h1{font-size:28px;font-weight:800;overflow-wrap:anywhere}
+
+/* composer */
+.sheet-backdrop{position:fixed;inset:0;background:rgba(5,15,20,.55);z-index:40}
+.sheet{position:fixed;left:0;right:0;bottom:0;z-index:41;max-width:560px;margin:0 auto;max-height:calc(100% - env(safe-area-inset-top,0px) - 12px);overflow:auto;background:var(--surface);border-radius:20px 20px 0 0;padding:16px max(16px,env(safe-area-inset-right,0px)) calc(18px + env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px));display:grid;gap:14px;align-content:start}
+.sheet-h{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.sheet-h h2{font-size:21px;font-weight:800}
+.img-pick{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.img-prev{max-height:200px;border-radius:12px;display:block;max-width:100%}
+</style>
+<style>[hidden]{display:none!important}body{margin:0}img{max-width:100%}</style>
+</head>
+<body>
+
+<div id="app"></div>
+<div id="sheet"></div>
+<div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
+
+<script>
+(function(){
+'use strict';
+var $app=document.getElementById('app'),$sheet=document.getElementById('sheet'),$toast=document.getElementById('toast');
+var DB=null;
+
+/* ---------- constants ---------- */
+var CATS={
+  dating:{key:'dating',name:'Dating',blurb:'Pata rafiki, mpenzi au mwenza.',icon:'heart',cv:'--c-dating',cta:'Weka tangazo lako',empty:'Hakuna matangazo bado. Weka la kwanza.'},
+  memes:{key:'memes',name:'Memes',blurb:'Cheka, shiriki na toa maoni.',icon:'smile',cv:'--c-memes',cta:'Weka meme',empty:'Hakuna meme bado. Cheka kwanza, weka ya kwanza.'},
+  biashara:{key:'biashara',name:'Wafanyabiashara',blurb:'Tangaza bidhaa na huduma zako.',icon:'bag',cv:'--c-biashara',cta:'Tangaza biashara',empty:'Hakuna biashara bado. Tangaza ya kwanza.'},
+  vivutio:{key:'vivutio',name:'Vivutio na Msaada',blurb:'Sehemu za kutembelea na msaada kwa wenye mahitaji maalum.',icon:'compass',cv:'--c-vivutio',cta:'Weka sehemu',empty:'Hakuna sehemu bado. Weka ya kwanza.'}
+};
+var CAT_KEYS=['dating','memes','biashara','vivutio'];
+var SEEKING=['Urafiki','Uhusiano','Ndoa','Mazungumzo'];
+var TAGS=['Njia ya kiti cha magurudumu','Msaada wa kuona','Msaada wa kusikia','Choo kinachofikika','Mkalimani wa ishara','Msaidizi wa kutembea'];
+
+var P={
+ heart:'<path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>',
+ smile:'<circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><path d="M9 9h.01M15 9h.01"/>',
+ bag:'<path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><path d="M3 6h18"/><path d="M16 10a4 4 0 0 1-8 0"/>',
+ compass:'<circle cx="12" cy="12" r="10"/><path d="m16.24 7.76-2.12 6.36-6.36 2.12 2.12-6.36 6.36-2.12z"/>',
+ pin:'<path d="M21 10c0 7-9 13-9 13S3 17 3 10a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/>',
+ chat:'<path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/>',
+ like:'<path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3zM7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3"/>',
+ back:'<path d="M19 12H5"/><path d="m12 19-7-7 7-7"/>',
+ plus:'<path d="M12 5v14M5 12h14"/>',
+ home:'<path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><path d="M9 22V12h6v10"/>',
+ users:'<path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/>',
+ user:'<path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>',
+ cloud:'<path d="M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z"/>',
+ image:'<rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="m21 15-5-5L5 21"/>',
+ send:'<path d="m22 2-11 11"/><path d="m22 2-7 20-4-9-9-4 20-7z"/>',
+ x:'<path d="M18 6 6 18M6 6l12 12"/>'
+};
+function ic(n,s){s=s||20;return '<svg class="ic" width="'+s+'" height="'+s+'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'+P[n]+'</svg>';}
+function logo(s){return '<svg class="logo" width="'+s+'" height="'+s+'" viewBox="0 0 96 96" role="img" aria-label="Nembo ya Jamii"><rect class="lg-bg" width="96" height="96" rx="27"/><circle class="lg-a" cx="44" cy="29" r="8"/><circle class="lg-b" cx="44" cy="45.5" r="6.5"/><path class="lg-fg" d="M64 20v32a16 16 0 0 1-32 0" stroke-width="10" stroke-linecap="round"/></svg>';}
+function band(id){return '<div class="band" aria-hidden="true"><svg width="100%" height="40"><defs><pattern id="'+id+'" width="40" height="40" patternUnits="userSpaceOnUse"><rect class="kg-bg" width="40" height="40"/><path class="kg-d" d="M20 4 36 20 20 36 4 20z"/><circle class="kg-p" cx="20" cy="20" r="5.5"/><circle class="kg-w" cx="0" cy="0" r="3.5"/><circle class="kg-w" cx="40" cy="0" r="3.5"/><circle class="kg-w" cx="0" cy="40" r="3.5"/><circle class="kg-w" cx="40" cy="40" r="3.5"/></pattern></defs><rect width="100%" height="40" fill="url(#'+id+')"/></svg></div>';}
+
+/* ---------- helpers ---------- */
+function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
+function first(n){return String(n||'').trim().split(/\s+/)[0]||'';}
+function relTime(t){
+  var s=Math.max(0,(Date.now()-(t||0))/1000);
+  if(s<60)return 'sasa hivi';
+  var m=Math.floor(s/60); if(m<60)return 'dakika '+m+' zilizopita';
+  var h=Math.floor(m/60); if(h<24)return 'saa '+h+' zilizopita';
+  var d=Math.floor(h/24); if(d<7)return 'siku '+d+' zilizopita';
+  try{return new Date(t).toLocaleDateString('sw-TZ',{day:'numeric',month:'short',year:'numeric'});}catch(e){return new Date(t).toDateString();}
+}
+function isImg(u){return typeof u==='string'&&/^data:image\//.test(u);}
+function waNum(ph){var d=String(ph||'').replace(/\D/g,'');if(d.length<7)return '';if(d.charAt(0)==='0')d='255'+d.slice(1);return d;}
+var tt;function toast(m){$toast.textContent=m;$toast.hidden=false;clearTimeout(tt);tt=setTimeout(function(){$toast.hidden=true;},2600);}
+function tag(t){return '<span class="tag">'+esc(t)+'</span>';}
+
+function fileToJpeg(file,max,q,square){
+  return new Promise(function(res,rej){
+    var r=new FileReader();
+    r.onerror=function(){rej(r.error);};
+    r.onload=function(){
+      var img=new Image();
+      img.onerror=function(){rej(new Error('img'));};
+      img.onload=function(){
+        var sx=0,sy=0,sw=img.width,sh=img.height;
+        if(square){var m=Math.min(sw,sh);sx=(sw-m)/2;sy=(sh-m)/2;sw=m;sh=m;}
+        var sc=Math.min(1,max/Math.max(sw,sh));
+        var w=Math.max(1,Math.round(sw*sc)),h=Math.max(1,Math.round(sh*sc));
+        var c=document.createElement('canvas');c.width=w;c.height=h;
+        var x=c.getContext('2d');x.fillStyle='#fff';x.fillRect(0,0,w,h);x.drawImage(img,sx,sy,sw,sh,0,0,w,h);
+        var out=c.toDataURL('image/jpeg',q);
+        if(out.length>190000){c.width=Math.round(w*.75);c.height=Math.round(h*.75);x=c.getContext('2d');x.fillStyle='#fff';x.fillRect(0,0,c.width,c.height);x.drawImage(img,sx,sy,sw,sh,0,0,c.width,c.height);out=c.toDataURL('image/jpeg',.55);}
+        res(out);
+      };
+      img.src=r.result;
+    };
+    r.readAsDataURL(file);
+  });
+}
+
+/* ---------- local fallback store (when the shared db is not available) ---------- */
+function makeLocalDb(){
+  var KEY='jamii:local:v1',data={};
+  try{data=JSON.parse(localStorage.getItem(KEY)||'{}')||{};}catch(e){data={};}
+  var subs={};
+  function persist(){try{localStorage.setItem(KEY,JSON.stringify(data));}catch(e){}}
+  function snap(c){var o=data[c]||{};var docs=Object.keys(o).map(function(id){return {id:id,exists:true,data:function(){return o[id];}};});return {docs:docs,size:docs.length,empty:!docs.length};}
+  function notify(c){(subs[c]||[]).slice().forEach(function(f){f(snap(c));});}
+  function newId(){return 'l'+Date.now().toString(36)+Math.random().toString(36).slice(2,7);}
+  function docRef(path){
+    var parts=path.split('/'),id=parts.pop(),c=parts.join('/');
+    return {id:id,path:path,
+      get:function(){var v=(data[c]||{})[id];return Promise.resolve(v?{id:id,exists:true,data:function(){return v;}}:{id:id,exists:false,data:function(){return undefined;}});},
+      set:function(v){(data[c]=data[c]||{})[id]=JSON.parse(JSON.stringify(v));persist();notify(c);return Promise.resolve();},
+      delete:function(){if(data[c]){delete data[c][id];persist();notify(c);}return Promise.resolve();}};
+  }
+  return {doc:docRef,collection:function(c){return {path:c,
+    doc:function(id){return docRef(c+'/'+(id||newId()));},
+    add:function(v){var r=docRef(c+'/'+newId());return r.set(v).then(function(){return r;});},
+    onSnapshot:function(next){(subs[c]=subs[c]||[]).push(next);setTimeout(function(){next(snap(c));},0);return function(){subs[c]=(subs[c]||[]).filter(function(f){return f!==next;});};}};}};
+}
+
+/* ---------- state ---------- */
+var state={splashDone:false,ready:false,cloud:false,uid:null,canEdit:false,readOnly:false,out:false,slow:false,
+  profiles:{},posts:[],comments:[],likes:[],loaded:{profiles:false,posts:false,comments:false,likes:false},
+  tab:'home',cat:null,filter:'all',viewUid:null,authTab:'signup',authErr:'',profErr:'',
+  openC:{},closedC:{},allC:{},confirmDel:null,pendingPhoto:undefined,q:'',busy:false};
+var drafts={},commentsBy={},likesBy={},sheetImage=null;
+try{state.out=sessionStorage.getItem('jamii:out')==='1';}catch(e){}
+
+function derive(){
+  commentsBy={};state.comments.forEach(function(c){(commentsBy[c.postId]=commentsBy[c.postId]||[]).push(c);});
+  Object.keys(commentsBy).forEach(function(k){commentsBy[k].sort(function(a,b){return (a.createdAt||0)-(b.createdAt||0);});});
+  likesBy={};state.likes.forEach(function(l){(likesBy[l.postId]=likesBy[l.postId]||{})[l.uid]=1;});
+  state.posts.sort(function(a,b){return (b.createdAt||0)-(a.createdAt||0);});
+}
+function author(uid){
+  if(uid==='jamii')return {name:'Timu ya Jamii',team:true};
+  var p=state.profiles[uid];return {name:(p&&p.name)||'Mwanajamii',p:p};
+}
+function avatar(uid,sz){
+  if(uid==='jamii')return logo(sz);
+  var p=state.profiles[uid],n=(p&&p.name)||'?';
+  if(p&&isImg(p.photo))return '<img class="av" src="'+esc(p.photo)+'" alt="" width="'+sz+'" height="'+sz+'">';
+  var h=0,s=String(uid);for(var i=0;i<s.length;i++)h=(h*31+s.charCodeAt(i))>>>0;
+  return '<span class="av" style="width:'+sz+'px;height:'+sz+'px;font-size:'+Math.round(sz*.42)+'px;background:var(--a'+(h%5+1)+')">'+esc((n.trim().charAt(0)||'?').toUpperCase())+'</span>';
+}
+
+/* ---------- screens ---------- */
+function splashHtml(){
+  return '<section class="splash">'+band('k1')+'<div class="splash-mid">'+logo(112)+'<h1 class="splash-name">Jamii</h1><p class="tagline">Hapa ndipo watu wanakutana</p></div><div class="splash-cta"><button class="btn gold" data-act="start">Anza</button></div>'+band('k2')+'</section>';
+}
+function loadingHtml(){return '<div class="loading">'+logo(56)+'<p>Inapakia Jamii…</p></div>';}
+
+function authHtml(){
+  var su=state.authTab==='signup';
+  return '<main class="wrap auth">'+
+   '<div class="auth-head">'+logo(48)+'<div><div class="wordmark">Jamii</div><div class="muted">Hapa ndipo watu wanakutana</div></div></div>'+
+   '<div class="seg" role="group" aria-label="Chagua"><button type="button" data-act="authtab" data-v="signup" aria-pressed="'+su+'">Jisajili</button><button type="button" data-act="authtab" data-v="signin" aria-pressed="'+(!su)+'">Ingia</button></div>'+
+   '<form class="card" data-form="auth" novalidate>'+
+    (su?'<div class="field"><label for="a-name">Jina lako</label><input id="a-name" name="name" type="text" maxlength="40" autocomplete="name" placeholder="Mfano: Amina Juma"></div>':'')+
+    '<div class="field"><label for="a-email">Email</label><input id="a-email" name="email" type="email" autocomplete="email" inputmode="email" placeholder="jina@mfano.com"><span class="hint">Email yako haionekani kwa wengine.</span></div>'+
+    (su?'<label class="check"><input id="a-adult" name="adult" type="checkbox"><span>Nina miaka 18 au zaidi.</span></label>':'')+
+    (state.authErr?'<div class="err" role="alert">'+esc(state.authErr)+'</div>':'')+
+    '<button class="btn block" type="submit" data-provider="email"'+(state.busy?' disabled':'')+'>'+(su?'Jisajili na email':'Ingia na email')+'</button>'+
+    '<div class="or">au</div>'+
+    '<button class="btn ghost block" type="submit" data-provider="icloud"'+(state.busy?' disabled':'')+'>'+ic('cloud',20)+(su?'Jisajili na iCloud':'Ingia na iCloud')+'</button>'+
+    (su?'':'<span class="hint fine">Tumia email uliyosajili nayo.</span>')+
+   '</form>'+
+   '<p class="fine">Toleo la majaribio. Uthibitisho kamili wa email na iCloud utaongezwa na seva ya kuingia.</p>'+
+  '</main>';
+}
+
+function header(inner){return '<header class="top"><div class="wrap top-in">'+inner+'</div></header>';}
+function navHtml(){
+  function b(t,i,l){var cur=state.viewUid?false:(state.cat?t==='home':state.tab===t);return '<button type="button" data-act="tab" data-v="'+t+'"'+(cur?' aria-current="page"':'')+'>'+ic(i,22)+'<span>'+l+'</span></button>';}
+  return '<nav class="nav" aria-label="Menyu kuu"><div class="nav-in">'+b('home','home','Nyumbani')+b('members','users','Wanajamii')+b('me','user','Mimi')+'</div></nav>';
+}
+
+function homeHtml(me){
+  var counts={};CAT_KEYS.forEach(function(k){counts[k]=state.posts.filter(function(p){return p.cat===k;}).length;});
+  var tiles=CAT_KEYS.map(function(k){var c=CATS[k];
+    return '<button class="tile" type="button" data-act="cat" data-v="'+k+'" style="--cat:var('+c.cv+')"><span class="tic">'+ic(c.icon,22)+'</span><h2>'+esc(c.name)+'</h2><span class="blurb">'+esc(c.blurb)+'</span><span class="count">'+counts[k]+' posti</span></button>';}).join('');
+  var recent=state.posts.slice(0,3).map(function(p){var c=CATS[p.cat]||CATS.memes,a=author(p.authorId);
+    return '<button class="mini-row" type="button" data-act="cat" data-v="'+esc(p.cat)+'" style="--cat:var('+c.cv+')"><span class="t">'+esc(p.title||'Meme mpya')+'</span><span class="m"><span class="tag">'+esc(c.name)+'</span><span>'+esc(a.name)+'</span><span>'+relTime(p.createdAt)+'</span></span></button>';}).join('');
+  return header(logo(34)+'<span class="wordmark">Jamii</span><span class="spacer"></span><button class="icon-btn" type="button" data-act="tab" data-v="me" aria-label="Profile yangu">'+avatar(state.uid,34)+'</button>')+
+   '<main class="wrap main"><div><h1 class="hello">Karibu, '+esc(first(me.name))+'</h1><p class="muted">Chagua unakotaka kwenda leo.</p></div>'+
+   banners()+'<div class="tiles">'+tiles+'</div>'+
+   (recent?'<h2 class="sec-h">Mpya hivi karibuni</h2><div class="mini">'+recent+'</div>':'')+'</main>'+navHtml();
+}
+function banners(){
+  var h='';
+  if(!state.cloud)h+='<div class="note">Hali ya majaribio: data yako inahifadhiwa kwenye kivinjari hiki tu.</div>';
+  if(state.readOnly)h+='<div class="note warn">Una ruhusa ya kusoma tu. Omba ruhusa ya Contributor ili uweze kuweka posti na maoni.</div>';
+  return h;
+}
+
+function isOpen(p){return p.cat==='memes'?!state.closedC[p.id]:!!state.openC[p.id];}
+function postHtml(p){
+  var c=CATS[p.cat]||CATS.memes,a=author(p.authorId),id=esc(p.id);
+  var likes=likesBy[p.id]||{},n=Object.keys(likes).length,liked=!!likes[state.uid];
+  var cm=commentsBy[p.id]||[],open=isOpen(p),mine=p.authorId===state.uid||state.canEdit;
+  var meta='';
+  if(p.cat==='dating'){if(p.age)meta+=tag(p.age+' miaka');if(p.seeking)meta+=tag('Natafuta: '+p.seeking);}
+  if(p.cat==='biashara'&&p.price)meta+=tag(p.price);
+  if(p.cat==='vivutio'){meta+=tag(p.kind==='msaada'?'Msaada kwa mahitaji maalum':'Kivutio');if(p.fee)meta+=tag('Ada: '+p.fee);(p.tags||[]).forEach(function(t){meta+=tag(t);});}
+  var who=a.team?'<span class="author" style="cursor:default">'+avatar('jamii',36)+'<span><b>'+esc(a.name)+'</b><br><span class="ph-meta">'+relTime(p.createdAt)+'</span></span></span>'
+    :'<button class="author" type="button" data-act="viewp" data-v="'+esc(p.authorId)+'">'+avatar(p.authorId,36)+'<span><b>'+esc(a.name)+'</b><br><span class="ph-meta">'+relTime(p.createdAt)+'</span></span></button>';
+  var loc=p.location?'<div class="loc">'+ic('pin',16)+'<span>'+esc(p.location)+'</span><a href="https://www.google.com/maps/search/?api=1&amp;query='+encodeURIComponent(p.location)+'" target="_blank" rel="noopener">Ona ramani</a></div>':'';
+  var wa=p.phone?waNum(p.phone):'';
+  var contact=p.phone?'<div class="contact"><span class="sel">'+esc(p.phone)+'</span>'+(wa?'<a href="https://wa.me/'+wa+'" target="_blank" rel="noopener">WhatsApp</a>':'')+'</div>':'';
+  var delKey='p:'+p.id;
+  var del=mine?(state.confirmDel===delKey?'<button class="act danger" type="button" data-act="del" data-v="'+id+'">Hakika? Futa</button><button class="act" type="button" data-act="cancelc">Ghairi</button>':'<button class="act" type="button" data-act="del" data-v="'+id+'">Futa</button>'):'';
+  return '<article class="post" style="--cat:var('+c.cv+')">'+
+   '<div class="ph">'+who+'</div>'+
+   (p.title?'<h3>'+esc(p.title)+'</h3>':'')+
+   (isImg(p.image)?'<img class="pimg" src="'+esc(p.image)+'" alt="'+esc(p.title||'Picha ya posti')+'">':'')+
+   (p.body?'<p class="ptext">'+esc(p.body)+'</p>':'')+
+   (meta?'<div class="meta">'+meta+'</div>':'')+loc+contact+
+   '<div class="acts"><button class="act" type="button" data-act="like" data-v="'+id+'" aria-pressed="'+liked+'"'+(state.readOnly?' disabled':'')+'>'+ic('like',18)+'<span>'+(n?n+' ':'')+'Napenda</span></button>'+
+   '<button class="act" type="button" data-act="ctoggle" data-v="'+id+'" aria-expanded="'+open+'">'+ic('chat',18)+'<span>Maoni ('+cm.length+')</span></button><span class="grow"></span>'+del+'</div>'+
+   (open?commentsHtml(p,cm):'')+'</article>';
+}
+function commentsHtml(p,cm){
+  var all=state.allC[p.id],shown=(all||cm.length<=3)?cm:cm.slice(-3),h='<div class="comments">';
+  if(cm.length>3&&!all)h+='<button class="link" type="button" data-act="call" data-v="'+esc(p.id)+'">Ona maoni yote ('+cm.length+')</button>';
+  shown.forEach(function(c){
+    var a=author(c.authorId),can=c.authorId===state.uid||state.canEdit,dk='c:'+c.id;
+    h+='<div class="cm"><button class="av-btn" type="button" data-act="viewp" data-v="'+esc(c.authorId)+'" aria-label="Ona profile">'+avatar(c.authorId,30)+'</button><div class="cm-b"><div class="cm-h"><b>'+esc(a.name)+'</b><span class="muted">'+relTime(c.createdAt)+'</span></div><div class="cm-t">'+esc(c.text)+'</div></div>'+
+      (can?(state.confirmDel===dk?'<button class="x" type="button" data-act="delc" data-v="'+esc(c.id)+'">Hakika?</button>':'<button class="x" type="button" data-act="delc" data-v="'+esc(c.id)+'" aria-label="Futa maoni">Futa</button>'):'')+'</div>';
+  });
+  if(!state.readOnly)h+='<form class="cform" data-form="comment" data-post="'+esc(p.id)+'"><input id="c-'+esc(p.id)+'" type="text" maxlength="300" placeholder="Andika maoni…" autocomplete="off" aria-label="Andika maoni"><button class="send" type="submit" aria-label="Tuma maoni">'+ic('send',18)+'</button></form>';
+  return h+'</div>';
+}
+
+function catHtml(){
+  var c=CATS[state.cat],posts=state.posts.filter(function(p){return p.cat===c.key;});
+  if(c.key==='vivutio'&&state.filter!=='all')posts=posts.filter(function(p){return p.kind===state.filter;});
+  var filters='';
+  if(c.key==='vivutio'){
+    filters='<div class="chips" style="--cat:var('+c.cv+')">'+[['all','Vyote'],['kivutio','Vivutio'],['msaada','Msaada kwa mahitaji maalum']].map(function(f){return '<button class="chip" type="button" data-act="filter" data-v="'+f[0]+'" aria-pressed="'+(state.filter===f[0])+'">'+f[1]+'</button>';}).join('')+'</div>';
+  }
+  var note=c.key==='dating'?'<div class="note">Kwa watu wenye miaka 18 au zaidi. Kwa usalama, kutana mahali pa wazi na mwambie mtu unayemwamini.</div>':'';
+  var list=posts.length?posts.map(postHtml).join(''):(state.loaded.posts?'<div class="empty"><p>'+esc(c.empty)+'</p></div>':'<div class="empty"><p>Inapakia…</p></div>');
+  return header('<button class="icon-btn" type="button" data-act="back" aria-label="Rudi">'+ic('back',22)+'</button><span class="top-title cat-title" style="--cat:var('+c.cv+')">'+ic(c.icon,20)+esc(c.name)+'</span>')+
+   '<main class="wrap main"><div class="feed-head">'+banners()+note+(state.readOnly?'':'<button class="btn cat block" type="button" data-act="compose" style="--cat:var('+c.cv+')">'+ic('plus',20)+esc(c.cta)+'</button>')+filters+'</div>'+list+'</main>'+navHtml();
+}
+
+function membersHtml(){
+  var q=state.q.trim().toLowerCase();
+  var ids=Object.keys(state.profiles).filter(function(id){var p=state.profiles[id];return (p.visible!==false||id===state.uid)&&(!q||((p.name||'')+' '+(p.city||'')).toLowerCase().indexOf(q)>-1);});
+  ids.sort(function(a,b){return String(state.profiles[a].name||'').localeCompare(String(state.profiles[b].name||''));});
+  var rows=ids.map(function(id){var p=state.profiles[id];
+    return '<button class="mem" type="button" data-act="viewp" data-v="'+esc(id)+'">'+avatar(id,46)+'<span style="min-width:0"><span class="nm">'+esc(p.name||'Mwanajamii')+(id===state.uid?' (wewe)':'')+'</span>'+(p.city?'<div class="muted" style="font-size:13px">'+esc(p.city)+'</div>':'')+(p.bio?'<div class="bio">'+esc(p.bio)+'</div>':'')+(p.visible===false?'<div class="tag" style="margin-top:4px">Imefichwa kwa wengine</div>':'')+'</span></button>';}).join('');
+  return header('<span class="top-title">Wanajamii</span>')+
+   '<main class="wrap main"><div class="field"><label for="q-members" class="lbl">Tafuta mtu au mji</label><input id="q-members" type="text" placeholder="Jina au mji" autocomplete="off"></div>'+
+   (rows?'<div class="members">'+rows+'</div>':'<div class="empty"><p>Hakuna wanajamii waliopatikana.</p></div>')+'</main>'+navHtml();
+}
+
+function miniPosts(uid){
+  var mine=state.posts.filter(function(p){return p.authorId===uid;});
+  if(!mine.length)return '<div class="empty"><p>Hakuna posti bado.</p></div>';
+  return '<div class="mini">'+mine.map(function(p){var c=CATS[p.cat]||CATS.memes;
+    return '<button class="mini-row" type="button" data-act="cat" data-v="'+esc(p.cat)+'" style="--cat:var('+c.cv+')"><span class="t">'+esc(p.title||'Meme')+'</span><span class="m"><span class="tag">'+esc(c.name)+'</span><span>'+relTime(p.createdAt)+'</span></span></button>';}).join('')+'</div>';
+}
+function viewProfileHtml(){
+  var uid=state.viewUid,p=state.profiles[uid],self=uid===state.uid,hidden=p&&p.visible===false&&!self;
+  var body;
+  if(uid==='jamii'){body='<div class="big-prof">'+logo(88)+'<h1>Timu ya Jamii</h1><p>Karibu Jamii. Hapa ndipo watu wanakutana.</p></div>';}
+  else if(!p){body='<div class="empty"><p>Mwanajamii huyu hajapatikana.</p></div>';}
+  else if(hidden){body='<div class="big-prof">'+avatar(uid,88)+'<h1>'+esc(p.name||'Mwanajamii')+'</h1><div class="note">Mtu huyu ameficha profile yake.</div></div>';}
+  else{
+    body='<div class="big-prof">'+avatar(uid,88)+'<h1>'+esc(p.name||'Mwanajamii')+'</h1>'+(p.city?'<div class="loc">'+ic('pin',16)+'<span>'+esc(p.city)+'</span></div>':'')+(p.bio?'<p class="ptext">'+esc(p.bio)+'</p>':'')+
+      ((p.interests&&p.interests.length)?'<div class="meta">'+p.interests.map(tag).join('')+'</div>':'')+'</div>'+
+      '<h2 class="sec-h">Posti</h2>'+miniPosts(uid);
+  }
+  return header('<button class="icon-btn" type="button" data-act="back" aria-label="Rudi">'+ic('back',22)+'</button><span class="top-title">Profile</span>')+'<main class="wrap main">'+body+'</main>'+navHtml();
+}
+
+function meHtml(me){
+  var uid=state.uid;
+  var photoPrev=state.pendingPhoto!==undefined?(state.pendingPhoto?'<img class="av" src="'+esc(state.pendingPhoto)+'" alt="" width="72" height="72">':'<span class="av" style="width:72px;height:72px;font-size:30px;background:var(--a1)">'+esc((me.name||'?').charAt(0).toUpperCase())+'</span>'):avatar(uid,72);
+  return header('<span class="top-title">Profile yangu</span><span class="spacer"></span><button class="btn ghost small" type="button" data-act="logout">Toka</button>')+
+   '<main class="wrap main">'+banners()+
+   '<div class="me-head">'+avatar(uid,72)+'<div style="min-width:0"><h1>'+esc(me.name||'')+'</h1>'+(me.city?'<div class="muted">'+esc(me.city)+'</div>':'')+'</div></div>'+
+   '<form class="card" data-form="profile" novalidate>'+
+    '<div class="photo-row">'+photoPrev+'<div style="display:grid;gap:8px"><label class="btn ghost small" for="p-file">'+ic('image',18)+'Chagua picha</label><input id="p-file" type="file" accept="image/*" hidden>'+((me.photo||state.pendingPhoto)?'<button class="link" type="button" data-act="rmphoto">Ondoa picha</button>':'')+'</div></div>'+
+    '<div class="field"><label for="p-name">Jina</label><input id="p-name" type="text" maxlength="40" value="'+esc(me.name||'')+'"></div>'+
+    '<div class="field"><label for="p-city">Mji unaoishi</label><input id="p-city" type="text" maxlength="60" value="'+esc(me.city||'')+'" placeholder="Mfano: Arusha"></div>'+
+    '<div class="field"><label for="p-bio">Kuhusu mimi</label><textarea id="p-bio" maxlength="300" placeholder="Jielezee kwa sentensi chache.">'+esc(me.bio||'')+'</textarea></div>'+
+    '<div class="field"><label for="p-int">Napenda</label><input id="p-int" type="text" maxlength="120" value="'+esc((me.interests||[]).join(', '))+'" placeholder="muziki, mpira, kupika"><span class="hint">Tenganisha kwa koma.</span></div>'+
+    '<label class="switch"><input id="p-vis" type="checkbox"'+(me.visible!==false?' checked':'')+'><span class="trk"></span><span><b>Profile yangu ionekane kwa wengine</b><br><span class="hint muted">Ukizima, hutaonekana kwenye orodha ya Wanajamii na profile yako itaonyesha jina lako tu.</span></span></label>'+
+    (state.profErr?'<div class="err" role="alert">'+esc(state.profErr)+'</div>':'')+
+    '<button class="btn block" type="submit"'+(state.busy?' disabled':'')+'>Hifadhi</button>'+
+   '</form>'+
+   '<h2 class="sec-h">Posti zangu</h2>'+miniPosts(uid)+'</main>'+navHtml();
+}
+
+function screen(){
+  if(!state.splashDone)return splashHtml();
+  if(!state.ready||(!state.loaded.profiles&&!state.slow))return loadingHtml();
+  var me=state.profiles[state.uid];
+  if(!me||state.out)return authHtml();
+  if(state.viewUid)return viewProfileHtml();
+  if(state.cat)return catHtml();
+  if(state.tab==='members')return membersHtml();
+  if(state.tab==='me')return meHtml(me);
+  return homeHtml(me);
+}
+
+function render(){
+  var act=document.activeElement,fid=null,ss=0,se=0,y=window.scrollY;
+  if(act&&act.id&&$app.contains(act)){fid=act.id;try{ss=act.selectionStart;se=act.selectionEnd;}catch(e){}}
+  $app.classList.toggle('is-splash',!state.splashDone);
+  $app.innerHTML=screen();
+  $app.querySelectorAll('input[id],textarea[id]').forEach(function(el){
+    if(Object.prototype.hasOwnProperty.call(drafts,el.id)){if(el.type==='checkbox')el.checked=!!drafts[el.id];else if(el.type!=='file')el.value=drafts[el.id];}
+  });
+  if(fid){var el=document.getElementById(fid);if(el&&$app.contains(el)){try{el.focus({preventScroll:true});if(ss!=null&&el.setSelectionRange)el.setSelectionRange(ss,se);}catch(e){}}}
+  window.scrollTo(0,y);
+}
+function nav(patch){Object.assign(state,patch);state.confirmDel=null;render();window.scrollTo(0,0);}
+
+/* ---------- actions ---------- */
+var splashTimer=setTimeout(finishSplash,2800);
+function finishSplash(){if(state.splashDone)return;clearTimeout(splashTimer);state.splashDone=true;document.body.classList.remove('on-splash');render();window.scrollTo(0,0);}
+
+function errText(e,fallback){
+  var c=e&&e.code;
+  if(c==='invalid_argument')return 'Huna ruhusa ya kuandika hapa. Omba ruhusa ya Contributor.';
+  if(c==='quota_exceeded')return 'Hifadhi ya Jamii imejaa. Mwambie msimamizi afute posti za zamani.';
+  return fallback||'Imeshindwa. Jaribu tena.';
+}
+function goIn(){state.out=false;try{sessionStorage.removeItem('jamii:out');}catch(e){}state.authErr='';state.tab='home';state.cat=null;state.viewUid=null;render();window.scrollTo(0,0);}
+
+async function authSubmit(form,provider){
+  if(state.busy)return;
+  var su=state.authTab==='signup';
+  var email=(form.elements.email.value||'').trim().toLowerCase();
+  var name=su?(form.elements.name.value||'').trim():'';
+  var adult=su?form.elements.adult.checked:true;
+  var err='';
+  if(su&&name.length<2)err='Weka jina lako (herufi 2 au zaidi).';
+  else if(!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email))err='Weka email sahihi.';
+  else if(provider==='icloud'&&!/@(icloud|me|mac)\.com$/.test(email))err='Weka email yako ya iCloud (mfano jina@icloud.com).';
+  else if(su&&!adult)err='Jamii ni kwa watu wenye miaka 18 au zaidi.';
+  if(err){state.authErr=err;drafts['a-email']=email;if(su)drafts['a-name']=name;render();return;}
+  state.busy=true;state.authErr='';
+  try{
+    var ref=DB.doc('profiles/'+state.uid),ex=await ref.get();
+    if(su){
+      if(ex.exists){state.authTab='signin';state.authErr='Tayari umejisajili. Bonyeza "Ingia".';}
+      else{
+        var now=Date.now();
+        await ref.set({name:name,visible:true,adult:true,provider:provider,createdAt:now,updatedAt:now});
+        await DB.doc('data/users/'+state.uid+'/account').set({email:email,provider:provider,createdAt:now});
+        drafts={};state.busy=false;goIn();toast('Karibu Jamii, '+first(name)+'!');return;
+      }
+    }else{
+      if(!ex.exists){state.authErr='Hujajisajili bado. Bonyeza "Jisajili".';}
+      else{
+        var acc=await DB.doc('data/users/'+state.uid+'/account').get();
+        var a=acc.exists?acc.data():null;
+        if(a&&a.email&&a.email!==email){state.authErr='Email hii haifanani na ile uliyosajili.';}
+        else{drafts={};state.busy=false;goIn();return;}
+      }
+    }
+  }catch(e){state.authErr=errText(e);}
+  state.busy=false;render();
+}
+
+async function saveProfile(form){
+  if(state.busy)return;
+  var name=(document.getElementById('p-name').value||'').trim();
+  if(name.length<2){state.profErr='Jina liwe na herufi 2 au zaidi.';render();return;}
+  var city=(document.getElementById('p-city').value||'').trim();
+  var bio=(document.getElementById('p-bio').value||'').trim();
+  var ints=(document.getElementById('p-int').value||'').split(',').map(function(s){return s.trim().slice(0,24);}).filter(Boolean).slice(0,6);
+  var vis=document.getElementById('p-vis').checked;
+  var prev=state.profiles[state.uid]||{};
+  var data=Object.assign({},prev,{name:name,city:city,bio:bio,interests:ints,visible:vis,updatedAt:Date.now()});
+  if(state.pendingPhoto!==undefined){if(state.pendingPhoto)data.photo=state.pendingPhoto;else delete data.photo;}
+  state.busy=true;state.profErr='';
+  try{
+    await DB.doc('profiles/'+state.uid).set(data);
+    ['p-name','p-city','p-bio','p-int','p-vis'].forEach(function(k){delete drafts[k];});
+    state.pendingPhoto=undefined;toast('Profile imehifadhiwa');
+  }catch(e){state.profErr=errText(e);}
+  state.busy=false;render();
+}
+
+async function sendComment(form){
+  var pid=form.dataset.post,input=form.querySelector('input'),text=(input.value||'').trim();
+  if(!text||state.readOnly)return;
+  try{
+    await DB.collection('comments').add({postId:pid,authorId:state.uid,text:text,createdAt:Date.now()});
+    delete drafts['c-'+pid];input.value='';
+  }catch(e){toast(errText(e,'Maoni hayakutumwa. Jaribu tena.'));}
+}
+async function toggleLike(pid){
+  if(state.readOnly)return;
+  var ref=DB.collection('likes').doc(pid+'_'+state.uid),liked=!!(likesBy[pid]&&likesBy[pid][state.uid]);
+  try{if(liked)await ref.delete();else await ref.set({postId:pid,uid:state.uid});}catch(e){toast(errText(e));}
+}
+async function deletePost(pid){
+  try{
+    var cms=(commentsBy[pid]||[]).slice(),lk=Object.keys(likesBy[pid]||{});
+    await DB.collection('posts').doc(pid).delete();
+    toast('Posti imefutwa');
+    cms.forEach(function(c){DB.collection('comments').doc(c.id).delete().catch(function(){});});
+    lk.forEach(function(u){DB.collection('likes').doc(pid+'_'+u).delete().catch(function(){});});
+  }catch(e){toast(errText(e));}
+}
+
+var acts={
+  start:function(){finishSplash();},
+  authtab:function(v){state.authTab=v;state.authErr='';render();},
+  tab:function(v){nav({tab:v,cat:null,viewUid:null,q:''});},
+  cat:function(v){nav({cat:v,filter:'all',viewUid:null,tab:'home'});},
+  back:function(){if(state.viewUid)nav({viewUid:null});else nav({cat:null});},
+  filter:function(v){state.filter=v;render();},
+  compose:function(){openSheet(state.cat);},
+  viewp:function(v){if(v)nav({viewUid:v});},
+  like:function(v){toggleLike(v);},
+  ctoggle:function(v){var p=state.posts.filter(function(x){return x.id===v;})[0];if(!p)return;if(p.cat==='memes')state.closedC[v]=!state.closedC[v];else state.openC[v]=!state.openC[v];render();},
+  call:function(v){state.allC[v]=true;render();},
+  del:function(v){if(state.confirmDel==='p:'+v){state.confirmDel=null;deletePost(v);}else{state.confirmDel='p:'+v;render();}},
+  delc:function(v){if(state.confirmDel==='c:'+v){state.confirmDel=null;DB.collection('comments').doc(v).delete().catch(function(e){toast(errText(e));});}else{state.confirmDel='c:'+v;render();}},
+  cancelc:function(){state.confirmDel=null;render();},
+  logout:function(){state.out=true;try{sessionStorage.setItem('jamii:out','1');}catch(e){}state.authTab='signin';state.authErr='';state.pendingPhoto=undefined;state.tab='home';state.cat=null;state.viewUid=null;render();window.scrollTo(0,0);},
+  rmphoto:function(){state.pendingPhoto='';render();}
+};
+$app.addEventListener('click',function(e){
+  var t=e.target.closest('[data-act]');if(!t)return;
+  var a=t.dataset.act;
+  if(state.confirmDel&&a!=='del'&&a!=='delc')state.confirmDel=null;
+  if(acts[a])acts[a](t.dataset.v,t,e);
+});
+$app.addEventListener('submit',function(e){
+  e.preventDefault();var f=e.target.closest('form');if(!f)return;
+  var k=f.dataset.form;
+  if(k==='auth')authSubmit(f,(e.submitter&&e.submitter.dataset.provider)||'email');
+  else if(k==='profile')saveProfile(f);
+  else if(k==='comment')sendComment(f);
+});
+$app.addEventListener('input',function(e){
+  var el=e.target;if(!el.id)return;
+  if(el.type==='file')return;
+  drafts[el.id]=el.type==='checkbox'?el.checked:el.value;
+  if(el.id==='q-members'){state.q=el.value;render();}
+});
+$app.addEventListener('change',function(e){
+  var el=e.target;
+  if(el.id==='p-file'&&el.files&&el.files[0]){
+    fileToJpeg(el.files[0],160,.82,true).then(function(u){state.pendingPhoto=u;render();}).catch(function(){toast('Picha haikusomeka. Jaribu nyingine.');});
+  }
+});
+
+/* ---------- composer ---------- */
+function chipGroup(name,vals,multi){
+  return '<div class="chips">'+vals.map(function(v,i){return '<button class="chip" type="button" data-chip="'+name+'" data-val="'+esc(v)+'"'+(multi?' data-multi="1"':'')+' aria-pressed="'+((!multi&&i===0&&name==='kind')?'true':'false')+'">'+esc(v)+'</button>';}).join('')+'</div>';
+}
+function sheetHtml(c){
+  var k=c.key,f='';
+  var tl=k==='memes'?'Kichwa cha meme (hiari)':(k==='dating'?'Kichwa cha tangazo':(k==='biashara'?'Bidhaa au huduma':'Jina la mahali'));
+  var tph=k==='memes'?'Mfano: Ijumaa jioni':(k==='dating'?'Mfano: Natafuta rafiki wa kweli':(k==='biashara'?'Mfano: Mikate ya kuchoma':'Mfano: Hifadhi ya Mikumi'));
+  f+='<div class="field"><label for="f-title">'+tl+'</label><input id="f-title" name="title" type="text" maxlength="80" placeholder="'+esc(tph)+'"></div>';
+  if(k==='vivutio'){
+    f+='<div class="field"><span class="lbl">Aina</span><div class="chips"><button class="chip" type="button" data-chip="kind" data-val="kivutio" aria-pressed="true">Kivutio</button><button class="chip" type="button" data-chip="kind" data-val="msaada" aria-pressed="false">Msaada kwa mahitaji maalum</button></div></div>';
+  }
+  if(k==='dating'){
+    f+='<div class="field"><label for="f-age">Umri</label><input id="f-age" name="age" type="number" inputmode="numeric" min="18" max="99" placeholder="18 au zaidi"></div>';
+    f+='<div class="field"><span class="lbl">Natafuta</span>'+chipGroup('seeking',SEEKING,false).replace(/aria-pressed="true"/g,'aria-pressed="false"')+'</div>';
+  }
+  f+='<div class="field"><label for="f-body">Maelezo'+(k==='memes'?' (hiari)':'')+'</label><textarea id="f-body" name="body" maxlength="600" placeholder="Andika maelezo hapa"></textarea></div>';
+  if(k==='biashara'){
+    f+='<div class="field"><label for="f-price">Bei (hiari)</label><input id="f-price" name="price" type="text" maxlength="30" placeholder="Mfano: TSh 25,000"></div>';
+    f+='<div class="field"><label for="f-phone">Namba ya simu au WhatsApp</label><input id="f-phone" name="phone" type="tel" inputmode="tel" maxlength="20" placeholder="Mfano: 0712 345 678"></div>';
+  }
+  if(k==='vivutio'){
+    f+='<div class="field" data-kind-show="kivutio"><label for="f-fee">Ada ya kuingia (hiari)</label><input id="f-fee" name="fee" type="text" maxlength="30" placeholder="Mfano: TSh 10,000"></div>';
+    f+='<div class="field" data-kind-show="msaada" hidden><span class="lbl">Huduma zinazopatikana</span>'+chipGroup('tag',TAGS,true)+'</div>';
+  }
+  f+='<div class="field"><label for="f-loc">Location'+(k==='memes'?' (hiari)':'')+'</label><input id="f-loc" name="location" type="text" maxlength="80" placeholder="Mfano: Mwenge, Dar es Salaam"></div>';
+  if(k!=='dating'){
+    f+='<div class="field"><span class="lbl">Picha'+(k==='memes'?'':' (hiari)')+'</span><div class="img-pick"><label class="btn ghost small" for="f-img">'+ic('image',18)+'Chagua picha</label><input id="f-img" type="file" accept="image/*" hidden><button class="link" type="button" data-sheet="rmimg" hidden>Ondoa</button></div><img class="img-prev" id="f-prev" alt="" hidden></div>';
+  }
+  return '<div class="sheet-backdrop" data-sheet="close"></div><form class="sheet" data-cat="'+k+'" style="--cat:var('+c.cv+')" novalidate aria-label="'+esc(c.cta)+'">'+
+    '<div class="sheet-h"><h2>'+esc(c.cta)+'</h2><button class="icon-btn" type="button" data-sheet="close" aria-label="Funga">'+ic('x',22)+'</button></div>'+f+
+    '<div class="err" id="f-err" role="alert" hidden></div><button class="btn cat block" id="f-go" type="submit">Weka posti</button></form>';
+}
+function openSheet(k){sheetImage=null;$sheet.innerHTML=sheetHtml(CATS[k]);var t=document.getElementById('f-title');if(t)t.focus();}
+function closeSheet(){$sheet.innerHTML='';sheetImage=null;}
+function sheetErr(m){var e=document.getElementById('f-err');if(e){e.textContent=m;e.hidden=!m;}}
+
+$sheet.addEventListener('click',function(e){
+  var s=e.target.closest('[data-sheet]');
+  if(s){if(s.dataset.sheet==='close')closeSheet();if(s.dataset.sheet==='rmimg'){sheetImage=null;document.getElementById('f-prev').hidden=true;s.hidden=true;document.getElementById('f-img').value='';}return;}
+  var chip=e.target.closest('[data-chip]');
+  if(chip){
+    var g=chip.dataset.chip;
+    if(chip.dataset.multi==='1'){chip.setAttribute('aria-pressed',chip.getAttribute('aria-pressed')==='true'?'false':'true');}
+    else{
+      var was=chip.getAttribute('aria-pressed')==='true';
+      $sheet.querySelectorAll('[data-chip="'+g+'"]').forEach(function(x){x.setAttribute('aria-pressed','false');});
+      if(g==='kind'||!was)chip.setAttribute('aria-pressed','true');
+      if(g==='kind')$sheet.querySelectorAll('[data-kind-show]').forEach(function(el){el.hidden=el.dataset.kindShow!==chip.dataset.val;});
+    }
+  }
+});
+$sheet.addEventListener('change',function(e){
+  var el=e.target;
+  if(el.id==='f-img'&&el.files&&el.files[0]){
+    fileToJpeg(el.files[0],800,.72,false).then(function(u){
+      sheetImage=u;var pv=document.getElementById('f-prev');pv.src=u;pv.hidden=false;
+      var rm=$sheet.querySelector('[data-sheet="rmimg"]');if(rm)rm.hidden=false;
+    }).catch(function(){sheetErr('Picha haikusomeka. Jaribu nyingine.');});
+  }
+});
+$sheet.addEventListener('submit',async function(e){
+  e.preventDefault();
+  var form=e.target.closest('form');if(!form||state.busy)return;
+  var k=form.dataset.cat;
+  function val(n){return ((form.elements[n]&&form.elements[n].value)||'').trim();}
+  function chipVal(g){var x=form.querySelector('[data-chip="'+g+'"][aria-pressed="true"]');return x?x.dataset.val:'';}
+  var title=val('title'),body=val('body'),loc=val('location');
+  if(k!=='memes'){
+    if(title.length<2){sheetErr('Weka kichwa (herufi 2 au zaidi).');return;}
+    if(!loc){sheetErr('Weka location.');return;}
+  }else if(!title&&!sheetImage&&!body){sheetErr('Weka picha, kichwa au maelezo.');return;}
+  var d={cat:k,authorId:state.uid,createdAt:Date.now()};
+  if(title)d.title=title;if(body)d.body=body;if(loc)d.location=loc;
+  if(k==='dating'){
+    var age=parseInt(val('age'),10);
+    if(!(age>=18&&age<=99)){sheetErr('Umri uwe kati ya 18 na 99.');return;}
+    d.age=age;var s=chipVal('seeking');if(s)d.seeking=s;
+  }
+  if(k==='biashara'){if(val('price'))d.price=val('price');if(val('phone'))d.phone=val('phone');}
+  if(k==='vivutio'){
+    d.kind=chipVal('kind')||'kivutio';
+    if(d.kind==='kivutio'&&val('fee'))d.fee=val('fee');
+    if(d.kind==='msaada'){var tg=[].slice.call(form.querySelectorAll('[data-chip="tag"][aria-pressed="true"]')).map(function(x){return x.dataset.val;});if(tg.length)d.tags=tg;}
+  }
+  if(sheetImage&&k!=='dating')d.image=sheetImage;
+  state.busy=true;var go=document.getElementById('f-go');if(go)go.disabled=true;sheetErr('');
+  try{
+    await DB.collection('posts').add(d);
+    closeSheet();toast('Posti imewekwa');
+    if(state.cat!==k)state.cat=k;
+    render();window.scrollTo(0,0);
+  }catch(er){sheetErr(errText(er));if(go)go.disabled=false;}
+  state.busy=false;
+});
+document.addEventListener('keydown',function(e){if(e.key==='Escape'&&$sheet.firstChild)closeSheet();});
+
+/* ---------- data wiring ---------- */
+function sub(name,apply){
+  try{
+    DB.collection(name).onSnapshot(function(snap){apply(snap.docs);state.loaded[name]=true;derive();render();},
+      function(){state.loaded[name]=true;render();});
+  }catch(e){state.loaded[name]=true;}
+}
+(async function init(){
+  document.body.classList.add('on-splash');
+  render();
+  var use=(window.claude&&typeof window.claude.use==='function')?function(n){return Promise.resolve(window.claude.use(n)).catch(function(){return null;});}:function(){return Promise.resolve(null);};
+  var res=await Promise.all([use('db'),use('user')]),db=res[0],userNs=res[1],me=null;
+  if(userNs){try{me=await userNs.me();}catch(e){}}
+  if(db&&me&&me.id){
+    DB=db;state.cloud=true;state.uid=me.id;
+    try{state.canEdit=!!(await userNs.canEdit());}catch(e){}
+    try{if((await userNs.can('data.write'))===false)state.readOnly=true;}catch(e){}
+  }else{DB=makeLocalDb();state.uid='local';state.cloud=false;state.canEdit=true;}
+  state.ready=true;
+  sub('profiles',function(docs){var m={};docs.forEach(function(d){if(d.exists!==false)m[d.id]=d.data();});state.profiles=m;});
+  sub('posts',function(docs){state.posts=docs.map(function(d){return Object.assign({id:d.id},d.data());});});
+  sub('comments',function(docs){state.comments=docs.map(function(d){return Object.assign({id:d.id},d.data());});});
+  sub('likes',function(docs){state.likes=docs.map(function(d){return Object.assign({id:d.id},d.data());});});
+  setTimeout(function(){if(!state.loaded.profiles){state.slow=true;render();}},10000);
+  render();
+})();
+})();
+</script>
+
+</body>
+</html>
